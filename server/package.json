@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "server": "nodemon app.js"
+  },
   "dependencies": {
     "@vendia/serverless-express": "^4.10.1",
     "bcrypt": "^5.1.0",

@@ -72,6 +72,7 @@ app.get("/users/:username", async (req, res) => {
         } else if (result && result.rows.length === 0) {
             res.status(500).send({ message: "User does not exist" })
         } else {
+            result.rows[0] = {...result.rows[0], links: result.rows[0].links.split(",")}
             res.status(200).send(result)
         }
     })
@@ -102,10 +103,6 @@ app.put("/users/:username", (req, res) => {
     let count = 1;
 
     if (bgcolor) {
-
-        if (count > 1) {
-            query += ", "
-        }
 
         query += "bgcolor = $" + count
         values.push(bgcolor)
@@ -144,6 +141,22 @@ app.put("/users/:username", (req, res) => {
         }
     })
 
+})
+
+//Update links
+app.put("/users/:username/links", (req, res) => {
+    const username = req.params.username
+    const {links} = req.body
+    const stringedLinks = links.join()
+
+    pool.query("UPDATE users SET links = $1 WHERE username = $2 RETURNING *", [stringedLinks, username], (error, result) => {
+        if(error) {
+            console.error(error)
+            res.status(500).send({ message: "Could not update links on database" })
+        } else {
+            res.status(200).send(result)
+        }
+    })
 })
 
 app.listen(5000, () => {

@@ -1,0 +1,10 @@
+.link_button {
+    width: 35vw;
+    height: 3vw;
+}
+
+.link_button_mobile {
+    width: 85vw;
+    height: 9vw;
+    font-size: 4vw;
+}

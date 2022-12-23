@@ -19,6 +19,7 @@ app.use(express.json())
 
 //Register a user to the database
 app.post("/users", async (req, res) => {
+    const start = Date.now()
     const { username, password } = req.body
     await bcrypt.genSalt(saltRounds, async (err, salt) => {
         if (err) {
@@ -39,7 +40,8 @@ app.post("/users", async (req, res) => {
                             console.error(error)
                             res.status(500).send({ message: "Error adding to the database" })
                         } else {
-                            res.status(200).send(result)
+                            console.log(`/POST - ${Date.now() - start} ms`)
+                            res.status(200).send(result.rows)
                         }
                     })
                 }
@@ -51,12 +53,14 @@ app.post("/users", async (req, res) => {
 
 //Get all users
 app.get("/users", async (req, res) => {
+    const start = Date.now()
     await pool.query("SELECT * FROM users", (error, result) => {
         if (error) {
             console.error(error)
             res.status(500).send({ message: "Error getting all users from database" })
         } else {
-            res.status(200).send(result)
+            console.log(`/GET - ${Date.now() - start} ms`)
+            res.status(200).send(result.rows)
         }
     })
 })
@@ -64,6 +68,7 @@ app.get("/users", async (req, res) => {
 //Get specific user
 app.get("/users/:username", async (req, res) => {
     const username = req.params.username
+    const start = Date.now()
 
     await pool.query("SELECT * FROM users WHERE username = $1", [username], (error, result) => {
         if (error) {
@@ -71,9 +76,12 @@ app.get("/users/:username", async (req, res) => {
             res.status(500).send({ message: "Error getting user from database" })
         } else if (result && result.rows.length === 0) {
             res.status(500).send({ message: "User does not exist" })
+        } else if (result && result.rows[0].links) {
+            console.log(`/GET - ${Date.now() - start} ms`)
+            res.status(200).send(result.rows)
         } else {
-            result.rows[0] = {...result.rows[0], links: result.rows[0].links.split(",")}
-            res.status(200).send(result)
+            console.log(`/GET - ${Date.now() - start} ms`)
+            res.status(200).send(result.rows)
         }
     })
 })
@@ -81,6 +89,7 @@ app.get("/users/:username", async (req, res) => {
 //Delete specific user
 app.delete("/users/:username", async (req, res) => {
     const username = req.params.username
+    const start = Date.now()
 
     await pool.query("DELETE FROM users WHERE username = $1 RETURNING *", [username], (error, result) => {
         if (error) {
@@ -89,7 +98,8 @@ app.delete("/users/:username", async (req, res) => {
         } else if (result && result.rows.length === 0) {
             res.status(500).send({ message: "User does not exist" })
         } else {
-            res.status(200).send(result)
+            console.log(`/DELETE - ${Date.now() - start} ms`)
+            res.status(200).send(result.rows)
         }
     })
 })
@@ -98,6 +108,7 @@ app.delete("/users/:username", async (req, res) => {
 app.put("/users/:username", (req, res) => {
     const username = req.params.username
     const { bgcolor, fontcolor, buttoncolor } = req.body
+    const start = Date.now()
     const values = []
     let query = "UPDATE users SET "
     let count = 1;
@@ -137,7 +148,8 @@ app.put("/users/:username", (req, res) => {
             console.error(error)
             res.status(500).send({ message: "Could not update information on database" })
         } else {
-            res.status(200).send(result)
+            console.log(`/PUT - ${Date.now() - start} ms`)
+            res.status(200).send(result.rows)
         }
     })
 
@@ -147,14 +159,15 @@ app.put("/users/:username", (req, res) => {
 app.put("/users/:username/links", (req, res) => {
     const username = req.params.username
     const {links} = req.body
-    const stringedLinks = links.join()
+    const start = Date.now()
 
-    pool.query("UPDATE users SET links = $1 WHERE username = $2 RETURNING *", [stringedLinks, username], (error, result) => {
+    pool.query("UPDATE users SET links = $1 WHERE username = $2 RETURNING *", [JSON.stringify(links), username], (error, result) => {
         if(error) {
             console.error(error)
             res.status(500).send({ message: "Could not update links on database" })
         } else {
-            res.status(200).send(result)
+            console.log(`/PUT - ${Date.now() - start} ms`)
+            res.status(200).send(result.rows)
         }
     })
 })

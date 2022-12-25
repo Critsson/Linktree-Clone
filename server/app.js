@@ -18,7 +18,7 @@ app.use(cors())
 app.use(express.json())
 
 //Register a user to the database
-app.post("/users", async (req, res) => {
+app.post("/api/users", async (req, res) => {
     const start = Date.now()
     const { username, password } = req.body
     await bcrypt.genSalt(saltRounds, async (err, salt) => {
@@ -31,7 +31,7 @@ app.post("/users", async (req, res) => {
                     console.error(err)
                     res.status(500).send({ message: "Hashing failed" })
                 } else {
-                    await pool.query("INSERT INTO users (username, password, bgcolor, fontcolor, buttoncolor) VALUES ($1, $2, $3, $4, $5) RETURNING *", [username, hash, "ffffff", "1c1c1c", "2bff00"], (error, result) => {
+                    await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username, hash], (error, result) => {
                         if (error && error.code === "23505") {
                             console.error(error)
                             res.status(500).send({ message: "Username already exists" })
@@ -52,7 +52,7 @@ app.post("/users", async (req, res) => {
 })
 
 //Get all users
-app.get("/users", async (req, res) => {
+app.get("/api/users", async (req, res) => {
     const start = Date.now()
     await pool.query("SELECT * FROM users", (error, result) => {
         if (error) {
@@ -66,7 +66,7 @@ app.get("/users", async (req, res) => {
 })
 
 //Get specific user
-app.get("/users/:username", async (req, res) => {
+app.get("/api/users/:username", async (req, res) => {
     const username = req.params.username
     const start = Date.now()
 
@@ -87,7 +87,7 @@ app.get("/users/:username", async (req, res) => {
 })
 
 //Delete specific user
-app.delete("/users/:username", async (req, res) => {
+app.delete("/api/users/:username", async (req, res) => {
     const username = req.params.username
     const start = Date.now()
 
@@ -105,9 +105,9 @@ app.delete("/users/:username", async (req, res) => {
 })
 
 //Update colors based on what is in the request body
-app.put("/users/:username", (req, res) => {
+app.put("/api/users/:username", (req, res) => {
     const username = req.params.username
-    const { bgcolor, fontcolor, buttoncolor } = req.body
+    const { bgcolor, fontcolor, buttoncolor, tagcolor, avatarbgcolor, avatarfontcolor } = req.body
     const start = Date.now()
     const values = []
     let query = "UPDATE users SET "
@@ -139,6 +139,36 @@ app.put("/users/:username", (req, res) => {
         values.push(buttoncolor)
         count++
     }
+    if (tagcolor) {
+
+        if (count > 1) {
+            query += ", "
+        }
+
+        query += "tagcolor = $" + count
+        values.push(tagcolor)
+        count++
+    }
+    if (avatarbgcolor) {
+
+        if (count > 1) {
+            query += ", "
+        }
+
+        query += "avatarbgcolor = $" + count
+        values.push(avatarbgcolor)
+        count++
+    }
+    if (avatarfontcolor) {
+
+        if (count > 1) {
+            query += ", "
+        }
+
+        query += "avatarfontcolor = $" + count
+        values.push(avatarfontcolor)
+        count++
+    }
 
     query += " WHERE username = $" + count + " RETURNING *"
     values.push(username)
@@ -156,7 +186,7 @@ app.put("/users/:username", (req, res) => {
 })
 
 //Update links
-app.put("/users/:username/links", (req, res) => {
+app.put("/api/users/:username/links", (req, res) => {
     const username = req.params.username
     const {links} = req.body
     const start = Date.now()

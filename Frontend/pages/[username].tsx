@@ -12,37 +12,41 @@ import useWindowSize from '../useWindowSize'
 export default function UserPage({ userData }: InferGetServerSidePropsType<typeof getServerSideProps>) {
 
     const fetchData = async (username: string | string[] | undefined) => {
-        return (await axios.get(`http://localhost:5000/users/${username}`)).data[0]
+        if (typeof username === "string") {
+            return (await axios.get(`http://localhost:5000/api/users/${username.toLowerCase()}`)).data[0]
+        }
     }
-
-    const userPageContainerMobile = {
-        display: "flex",
-        height: "100%",
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column" as "column",
-        fontFamily: "Inter, sans-serif",
-        gap: "3vw",
-        paddingTop: "8vw"
-    }
-
-    const userPageContainerDesktop = {
-        display: "flex",
-        height: "100%",
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column" as "column",
-        fontFamily: "Inter, sans-serif",
-        paddingTop: "2vw",
-        gap: "1vw"
-}
 
     const router = useRouter()
     const { username } = router.query
     const { isLoading, data } = useQuery({ queryKey: ["user-page-query"], queryFn: async () => await fetchData(username), placeholderData: userData })
     const windowSize = useWindowSize()
+
+
+    const userPageContainerMobile = {
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        alignItems: "center",
+        flexDirection: "column" as "column",
+        fontFamily: "Inter, sans-serif",
+        gap: "5vw",
+        paddingTop: "8vw",
+        backgroundColor: `#${data.bgcolor}`
+    }
+
+    const userPageContainerDesktop = {
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        alignItems: "center",
+        flexDirection: "column" as "column",
+        fontFamily: "Inter, sans-serif",
+        gap: "1.5vw",
+        paddingTop: "3vw",
+        backgroundColor: `#${data.bgcolor}`
+    }
+
 
     if (isLoading) {
         return (
@@ -59,17 +63,16 @@ export default function UserPage({ userData }: InferGetServerSidePropsType<typeo
     return (
         <div style={windowSize.width > 640 ? userPageContainerDesktop : userPageContainerMobile}>
             <Avatar sx={windowSize.width > 640 ?
-                { backgroundColor: `#${data.buttoncolor}`, width: "8vw", height: "8vw", fontSize: "5vw", color: `#${data.bgcolor}`, marginBottom: "-1vw" }
+                { backgroundColor: `#${data.avatarbgcolor}`, fontFamily: "Inter, sans-serif", width: "5vw", height: "5vw", fontSize: "3vw", color: `#${data.avatarfontcolor}`, marginBottom: "-1vw" }
                 :
-                { backgroundColor: `#${data.buttoncolor}`, width: "20vw", height: "20vw", fontSize: "12vw", color: `#${data.bgcolor}`, marginBottom: "-2vw" }}>
+                { backgroundColor: `#${data.avatarbgcolor}`, fontFamily: "Inter, sans-serif", width: "25vw", height: "25vw", fontSize: "16vw", color: `#${data.avatarfontcolor}`, marginBottom: "-2vw" }}>
                 {data.username[0].toUpperCase()}</Avatar>
             <h1 style={windowSize.width > 640 ?
-                { fontSize: "5vw", color: `#${data.fontcolor}` }
+                { fontSize: "1.5vw", color: `#${data.tagcolor}` }
                 :
-                { fontSize: "11vw", color: `#${data.fontcolor}` }}>{`@${data.username}`}</h1>
+                { fontSize: "7vw", color: `#${data.tagcolor}` }}>{`@${data.username}`}</h1>
             <div className={styles.user_page_button_container}>
                 {linkButtonElements}
-                <LinkButton key="1" link="https://chrisgao.dev" title="This is a test to see whether or not the words wrap around the button" buttonColor={data.buttoncolor} fontColor={data.fontcolor} />
             </div>
         </div>
     )
@@ -79,8 +82,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const { params } = context
     const username = params?.username
-    const userData = (await axios.get(`http://localhost:5000/users/${username}`)).data[0]
+    let userData;
 
+    if (typeof username === "string") {
+        userData = (await axios.get(`http://localhost:5000/api/users/${username.toLowerCase()}`)).data[0]
+    }
 
     return {
         props: {

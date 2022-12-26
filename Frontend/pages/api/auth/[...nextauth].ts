@@ -4,31 +4,28 @@ import axios from "axios"
 const bcrypt = require("bcrypt")
 
 const authOptions: NextAuthOptions = {
-    session: {
-        strategy: "jwt"
-    },
     providers: [
         CredentialsProvider({
             type: "credentials",
             credentials: {
-
+                loginUsername: {
+                    type: "text"
+                },
+                loginPassword: {
+                    type: "password"
+                }
             },
             async authorize(credentials, req) {
 
-                const { loginUsername, loginPassword } = credentials as {
-                    loginUsername: string,
-                    loginPassword: string
-                }
+                const data = (await axios.get(`http://localhost:5000/api/users/${credentials?.loginUsername.toLowerCase()}`)).data[0]
 
-                const data = (await axios.get(`http://localhost:5000/api/users/${loginUsername.toLowerCase()}`)).data[0]
-
-                const isValid = await bcrypt.compare(loginPassword, data.password)
+                const isValid = await bcrypt.compare(credentials?.loginPassword, data.password)
 
                 if(!isValid) {
                     throw new Error("Invalid Password")
+                } else {
+                    return {id: data.id,  name: data.username}
                 }
-
-                return {id: data.id, username: data.username}
                 
             }
         })

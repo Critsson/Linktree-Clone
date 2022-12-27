@@ -21,10 +21,10 @@ const authOptions: NextAuthOptions = {
 
                 const isValid = await bcrypt.compare(credentials?.loginPassword, data.password)
 
-                if(!isValid) {
+                if (!isValid) {
                     throw new Error("Invalid Password")
                 } else {
-                    return {id: data.id,  name: data.username}
+                    return { id: data.id, name: data.username }
                 }
                 
             }

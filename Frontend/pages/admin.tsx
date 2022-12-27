@@ -16,6 +16,8 @@ const AdminPage = () => {
     return <h3>Loading or not authenticated...</h3>
   }
 
+  console.log(session)
+
   return (
     <div>
       <button onClick={() => signOut({callbackUrl: "/"})}>Sign Out</button>

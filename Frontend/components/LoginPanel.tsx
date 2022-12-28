@@ -10,9 +10,11 @@ import axios from 'axios'
 
 interface props {
     handleSignInAlert: (message: string | undefined) => void,
-    handleInputFocus: (input: string) => void,
+    handleInSignup: (inSignup: boolean) => void,
     handleUsernameValidity: (usernameNotValid: boolean) => void,
-    handlePasswordValidity: (usernameNotValid: boolean) => void
+    handlePasswordValidity: (usernameNotValid: boolean) => void,
+    usernameNotValid: boolean,
+    passwordNotValid: boolean
 }
 
 const LoginPanel = (props: props) => {
@@ -31,7 +33,7 @@ const LoginPanel = (props: props) => {
         height: "60vw",
         borderRadius: "2vw",
         outline: "1.1vw #202430 solid",
-        boxShadow: "1vw 1vw 0 0.5vw #202430",
+        boxShadow: "2vw 1.5vw 0 1vw #202430",
         display: "flex",
         flexDirection: "column" as "column"
     }
@@ -75,7 +77,6 @@ const LoginPanel = (props: props) => {
         const res = await signIn("credentials", {
             loginUsername: username,
             loginPassword: password,
-            callbackUrl: '/admin',
             redirect: false
         })
 
@@ -96,12 +97,46 @@ const LoginPanel = (props: props) => {
 
         setIsChecking(true)
 
-        const postRes = await axios.post("http://localhost:5000/api/users", {
-            username,
-            password
+        if (props.usernameNotValid && props.passwordNotValid) {
+            setIsChecking(false)
+            setIsIncorrect(true)
+            props.handleSignInAlert("Invalid username and password")
+            return
+        } else if (props.usernameNotValid) {
+            setIsChecking(false)
+            setIsIncorrect(true)
+            props.handleSignInAlert("Invalid username")
+            return
+        } else if (props.passwordNotValid) {
+            setIsChecking(false)
+            setIsIncorrect(true)
+            props.handleSignInAlert("Invalid password")
+            return
+        }
+
+        try {
+            const postRes = await axios.post("http://localhost:5000/api/users", {
+                username,
+                password
+            })
+            console.log(postRes)
+        } catch (error) {
+            setIsChecking(false)
+            setIsIncorrect(true)
+            props.handleSignInAlert("Username already exists")
+            return
+        }
+
+        const res = await signIn("credentials", {
+            loginUsername: username,
+            loginPassword: password,
+            redirect: false
         })
 
-        console.log(postRes)
+        if (res?.error === null) {
+            await router.push("/admin")
+        }
+
         setIsChecking(false)
 
     }
@@ -126,7 +161,7 @@ const LoginPanel = (props: props) => {
 
         const regEx = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{1,}$/
 
-        if(!regEx.test(value)) {
+        if (!regEx.test(value)) {
             props.handlePasswordValidity(true)
         } else {
             if (value.length > 7 && value.length < 51) {
@@ -137,6 +172,18 @@ const LoginPanel = (props: props) => {
         }
 
         setPassword(value)
+    }
+
+    const handleLoginModeChange = (goingToLoginMode: boolean) => {
+        setUsername("")
+        setPassword("")
+        if (goingToLoginMode) {
+            props.handleInSignup(false)
+            setInLoginMode(true)
+        } else {
+            props.handleInSignup(true)
+            setInLoginMode(false)
+        }
     }
 
     return (
@@ -151,11 +198,7 @@ const LoginPanel = (props: props) => {
                             width: "50%", height: "100%", backgroundColor: inLoginMode ? "#7895B2" : "white", borderWidth: "0vw", fontSize: "5vw", fontWeight: "700",
                             color: inLoginMode ? "white" : "#202430", paddingTop: "2vw", paddingBottom: "2vw", borderTopLeftRadius: "1vw", outline: "1vw #202430 solid"
                         }}>Login</button>
-                    <button onClick={() => setInLoginMode(() => {
-                        setUsername("")
-                        setPassword("")
-                        return false
-                    })} className={styles.hover_cursor} style={windowSize.width > 640 ? {
+                    <button onClick={() => handleLoginModeChange(false)} className={styles.hover_cursor} style={windowSize.width > 640 ? {
                         width: "50%", height: "100%", backgroundColor: !inLoginMode ? "#7895B2" : "white", borderWidth: "0vw", fontSize: "1.9vw", fontWeight: "700",
                         color: !inLoginMode ? "white" : "#202430", paddingTop: ".8vw", paddingBottom: ".8vw", borderTopRightRadius: "1vw", outline: ".3vw #202430 solid"
                     }
@@ -199,12 +242,7 @@ const LoginPanel = (props: props) => {
                 :
                 <div style={windowSize.width > 640 ? loginPanelContainerDesktop : loginPanelContainerMobile}>
                     <div style={windowSize.width > 640 ? { display: "flex", marginBottom: "2vw" } : { display: "flex", marginBottom: "5vw" }}>
-                        <button onClick={() => setInLoginMode(() => {
-                            setUsername("")
-                            setPassword("")
-                            props.handleInputFocus("")
-                            return true
-                        })} className={styles.hover_cursor} style={windowSize.width > 640 ? {
+                        <button onClick={() => handleLoginModeChange(true)} className={styles.hover_cursor} style={windowSize.width > 640 ? {
                             width: "50%", height: "100%", backgroundColor: inLoginMode ? "#7895B2" : "white", borderWidth: "0vw", fontSize: "1.9vw", fontWeight: "700",
                             color: inLoginMode ? "white" : "#202430", paddingTop: ".8vw", paddingBottom: ".8vw", borderTopLeftRadius: "1vw", outline: ".3vw #202430 solid"
                         }
@@ -222,7 +260,7 @@ const LoginPanel = (props: props) => {
                             }}>Sign Up</button>
                     </div>
                     <form onSubmit={(e) => handleSignUp(e)} style={windowSize.width > 640 ? { display: "flex", flexDirection: "column", alignItems: "center", gap: "2.6vw" } : { display: "flex", flexDirection: "column", alignItems: "center", gap: "5vw" }}>
-                        <input onFocus={() => props.handleInputFocus("username")} onChange={(e) => checkUsernameChange(e.target.value)} value={username} style={windowSize.width > 640 ? {
+                        <input onChange={(e) => checkUsernameChange(e.target.value)} value={username} style={windowSize.width > 640 ? {
                             width: "30vw", height: "4vw", fontFamily: "Inter, sans-serif", fontSize: "1.8vw", boxShadow: ".4vw .4vw 0 0vw #202430", border: ".3vw #202430 solid", borderRadius: ".5vw",
                             paddingLeft: ".8vw", fontWeight: "500", outlineWidth: "0vw", color: "#202430"
                         }
@@ -231,7 +269,7 @@ const LoginPanel = (props: props) => {
                                 width: "70vw", height: "10vw", fontFamily: "Inter, sans-serif", fontSize: "5vw", boxShadow: "1.1vw 1.1vw 0 0vw #202430", border: "1vw #202430 solid", borderRadius: "2vw",
                                 paddingLeft: "1vw", fontWeight: "500", outlineWidth: "0vw", color: "#202430"
                             }} placeholder='Username'></input>
-                        <input onFocus={() => props.handleInputFocus("username")} onChange={(e) => checkPasswordChange(e.target.value)} type="password" value={password} style={windowSize.width > 640 ? {
+                        <input onChange={(e) => checkPasswordChange(e.target.value)} type="password" value={password} style={windowSize.width > 640 ? {
                             width: "30vw", height: "4vw", fontFamily: "Inter, sans-serif", fontSize: "1.8vw", boxShadow: ".4vw .4vw 0 0vw #202430", border: ".3vw #202430 solid", borderRadius: ".5vw",
                             paddingLeft: ".8vw", fontWeight: "500", outlineWidth: "0vw", color: "#202430"
                         }

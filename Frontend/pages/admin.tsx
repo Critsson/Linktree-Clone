@@ -1,6 +1,7 @@
 import React from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
+import { CircularProgress } from "@mui/material"
 
 const AdminPage = () => {
 
@@ -12,15 +13,17 @@ const AdminPage = () => {
     }
   })
 
-  if(status === "loading") {
-    return <h3>Loading or not authenticated...</h3>
+  if (status === "loading") {
+    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", width: "100vw" }}>
+      <CircularProgress sx={{ color: "lightgrey" }} />
+    </div>
   }
 
   console.log(session)
 
   return (
     <div>
-      <button onClick={() => signOut({callbackUrl: "/"})}>Sign Out</button>
+      <button onClick={() => signOut({ callbackUrl: "/" })}>Sign Out</button>
     </div>
   )
 }

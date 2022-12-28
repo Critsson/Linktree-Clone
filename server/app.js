@@ -17,6 +17,7 @@ const pool = new Pool({
 app.use(cors())
 app.use(express.json())
 
+
 //Register a user to the database
 app.post("/api/users", async (req, res) => {
     const start = Date.now()
@@ -188,16 +189,40 @@ app.put("/api/users/:username", (req, res) => {
 //Update links
 app.put("/api/users/:username/links", (req, res) => {
     const username = req.params.username
-    const {links} = req.body
+    const { links } = req.body
     const start = Date.now()
 
     pool.query("UPDATE users SET links = $1 WHERE username = $2 RETURNING *", [JSON.stringify(links), username], (error, result) => {
-        if(error) {
+        if (error) {
             console.error(error)
             res.status(500).send({ message: "Could not update links on database" })
         } else {
             console.log(`/PUT - ${Date.now() - start} ms`)
             res.status(200).send(result.rows)
+        }
+    })
+})
+
+//Authenticate User
+app.post("/api/login", (req, res) => {
+
+    const { username, password } = req.body
+    const start = Date.now()
+
+    pool.query("SELECT * from users WHERE username = $1", [username], async (error, result) => {
+        if (error) {
+            console.error(error)
+            res.status(401).send({ message: "Not authorized" })
+        } else if (result.rows.length > 0) {
+            const isValid = await bcrypt.compare(password, result.rows[0].password)
+            if (isValid) {
+                console.log(`${Date.now() - start} ms`)
+                res.status(200).send({ id: result.rows[0].id, username: result.rows[0].username })
+            } else {
+                res.status(401).send({ message: "Not authorized" })
+            }
+        } else {
+            res.status(401).send({ message: "Not authorized" })
         }
     })
 })

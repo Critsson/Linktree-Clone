@@ -25,7 +25,7 @@ const limiter = rateLimit({
     message: "Too many requests. Please try again later"
 })
 
-app.use(cors({ credentials: true, origin: `http://${process.env.PUBLIC_IP}` }))
+app.use(cors({ credentials: true, origin: `http://localhost:3000` }))
 app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)

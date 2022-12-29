@@ -271,7 +271,6 @@ app.put("/api/users/:username/links", (req, res) => {
 app.post("/api/login", (req, res) => {
 
     const { username, password } = req.body
-    console.log(req.header["Origin"])
     const start = Date.now()
 
     pool.query("SELECT * from users WHERE username = $1", [username], async (error, result) => {
@@ -284,7 +283,7 @@ app.post("/api/login", (req, res) => {
                 const token = jwt.sign({ username: result.rows[0].username }, process.env.JWT_SECRET, {
                     expiresIn: "12h"
                 })
-                console.log(`${Date.now() - start} ms`)
+                console.log(`LOGIN - ${Date.now() - start} ms`)
                 res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true })
                 return res.status(200).send({ token })
             } else {
@@ -299,6 +298,8 @@ app.post("/api/login", (req, res) => {
 //Validate User
 app.get("/api/validate", (req, res) => {
     const token = req.cookies.jwt
+    console.log(req.cookies.jwt)
+    const start = Date.now()
 
     if (!token) {
         return res.status(401).send({ message: "No token" })
@@ -307,6 +308,7 @@ app.get("/api/validate", (req, res) => {
         if (err) {
             return res.status(401).send({ message: "Not authorized" })
         } else {
+            console.log(`VERIFY - ${Date.now() - start} ms`)
             return res.status(200).send(decoded)
         }
     })

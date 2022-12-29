@@ -329,7 +329,7 @@ app.get("/api/validate", (req, res) => {
 
 //Logout User
 app.get("/api/logout", (req, res) => {
-    res.cookie("jwt", "", { maxAge: 0 })
+    res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "restapi.ca", sameSite: "strict" })
     res.status(200).send({ message: "Logged out" })
 })
 

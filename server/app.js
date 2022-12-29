@@ -6,6 +6,12 @@ const { Pool } = require("pg")
 const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
 const rateLimit = require("express-rate-limit")
+const https = require("https")
+const options = {
+    key: fs.readFileSync("/etc/letsencrypt/live/chainlink.restapi.ca/privkey.pem"),
+    cert: fs.readFileSync("/etc/letsencrypt/live/chainlink.restapi.ca/cert.pem")
+}
+const fs = require("fs")
 const app = express();
 const saltRounds = 12;
 
@@ -25,7 +31,14 @@ const limiter = rateLimit({
     message: "Too many requests. Please try again later"
 })
 
-app.use(cors({ credentials: true, origin: true, methods: "GET,HEAD,PUT,PATCH,POST,DELETE"}))
+app.use((req, res, next) => {
+    if (req.secure) {
+        next();
+    } else {
+        res.redirect(`https://${req.headers.host}${req.url}`)
+    }
+})
+app.use(cors({ credentials: true, origin: true, methods: "GET,HEAD,PUT,PATCH,POST,DELETE" }))
 app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)
@@ -57,7 +70,7 @@ app.post("/api/users", async (req, res) => {
                                 expiresIn: "12h"
                             })
                             console.log(`/POST:Registered User - ${Date.now() - start} ms`)
-                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true})
+                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true })
                             return res.status(200).send({ token })
                         }
                     })
@@ -70,7 +83,7 @@ app.post("/api/users", async (req, res) => {
 
 //Get all users
 app.get("/api/users", async (req, res) => {
- 
+
     const token = req.cookies.jwt
 
     if (!token) {
@@ -88,8 +101,8 @@ app.get("/api/users", async (req, res) => {
             console.error(error)
             return res.status(500).send({ message: "Error getting all users from database" })
         } else {
-            const placeholder = result.rows.map(({username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor}) => {
-                return {username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor}
+            const placeholder = result.rows.map(({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
+                return { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
             })
             console.log(`/GET - ${Date.now() - start} ms`)
             return res.status(200).send(placeholder)
@@ -110,13 +123,13 @@ app.get("/api/users/:username", async (req, res) => {
         } else if (result && result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
         } else if (result && result.rows[0].links) {
-            const {username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor} = result.rows[0]
+            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
             console.log(`/GET - ${Date.now() - start} ms`)
-            return res.status(200).send({username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor})
+            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         } else {
             console.log(`/GET - ${Date.now() - start} ms`)
-            const {username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor} = result.rows[0]
-            return res.status(200).send({username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor})
+            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         }
     })
 })
@@ -284,7 +297,7 @@ app.post("/api/login", (req, res) => {
                     expiresIn: "12h"
                 })
                 console.log(`LOGIN - ${Date.now() - start} ms`)
-                res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true})
+                res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true })
                 return res.status(200).send({ token })
             } else {
                 return res.status(401).send({ message: "Not authorized" })
@@ -320,6 +333,4 @@ app.get("/api/logout", (req, res) => {
     res.status(200).send({ message: "Logged out" })
 })
 
-app.listen(5000, () => {
-    console.log("Listening on port 5000...")
-})
+https.createServer(options, app).listen(443)

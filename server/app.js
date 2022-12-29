@@ -70,7 +70,7 @@ app.post("/api/users", async (req, res) => {
                                 expiresIn: "12h"
                             })
                             console.log(`/POST:Registered User - ${Date.now() - start} ms`)
-                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true })
+                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "restapi.ca" })
                             return res.status(200).send({ token })
                         }
                     })
@@ -297,7 +297,7 @@ app.post("/api/login", (req, res) => {
                     expiresIn: "12h"
                 })
                 console.log(`LOGIN - ${Date.now() - start} ms`)
-                res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true })
+                res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "restapi.ca" })
                 return res.status(200).send({ token })
             } else {
                 return res.status(401).send({ message: "Not authorized" })

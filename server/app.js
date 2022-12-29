@@ -30,6 +30,9 @@ app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)
 
+app.get("/test", (req, res) => {
+    return res.send({message: "Hello!"})
+})
 
 //Register a user to the database
 app.post("/api/users", async (req, res) => {

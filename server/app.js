@@ -25,14 +25,10 @@ const limiter = rateLimit({
     message: "Too many requests. Please try again later"
 })
 
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }))
+app.use(cors({ credentials: true, origin: `http://${process.env.PUBLIC_IP}` }))
 app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)
-
-app.get("/test", (req, res) => {
-    return res.send({message: "Hello!"})
-})
 
 //Register a user to the database
 app.post("/api/users", async (req, res) => {
@@ -275,6 +271,7 @@ app.put("/api/users/:username/links", (req, res) => {
 app.post("/api/login", (req, res) => {
 
     const { username, password } = req.body
+    console.log(req.header["Origin"])
     const start = Date.now()
 
     pool.query("SELECT * from users WHERE username = $1", [username], async (error, result) => {

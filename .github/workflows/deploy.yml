@@ -1,0 +1,19 @@
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{secrets.SSH_HOST}}
+          username: <user>
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /Linktree-Clone
+            git pull origin master

@@ -17,7 +17,6 @@ const AdminPage = () => {
         })
         setIsLoading(false)
       } catch (error) {
-        console.error(error)
         router.push("/")
       }
     }

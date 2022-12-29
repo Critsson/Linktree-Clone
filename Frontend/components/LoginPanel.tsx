@@ -72,9 +72,10 @@ const LoginPanel = (props: props) => {
                 username,
                 password
             }, {
-                withCredentials: true
+                withCredentials: true,
             })
             setIsChecking(false)
+            console.log(document.cookie)
             console.log(postRes)
             router.push("/admin")
         } catch (error) {

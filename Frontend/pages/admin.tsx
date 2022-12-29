@@ -26,7 +26,7 @@ const AdminPage = () => {
   }, [router])
 
   const handleLogout = async () => {
-      const logoutRes = await axios.get("http://44.201.234.255:5000/api/logout", {
+      const logoutRes = await axios.get("http://localhost:5000/api/logout", {
         withCredentials: true
       })
       router.push("/")

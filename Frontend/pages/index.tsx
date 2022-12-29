@@ -70,7 +70,6 @@ export default function Home() {
         setIsAuthenticating(false)
         router.push("/admin")
       } catch (error) {
-        console.error(error)
       }
     }
 

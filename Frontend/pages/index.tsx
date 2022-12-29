@@ -2,9 +2,12 @@ import useWindowSize from '../useWindowSize'
 import LoginPanel from '../components/LoginPanel'
 import LinkIcon from '@mui/icons-material/Link';
 import React from "react"
+import axios from "axios"
 import ErrorAlert from '../components/ErrorAlert';
 import SignUpHelper from '../components/SignUpHelper';
 import { AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/router';
+import { CircularProgress } from "@mui/material"
 
 export default function Home() {
 
@@ -32,10 +35,11 @@ export default function Home() {
   }
 
   const [errorAlertElements, setErrorAlertElements] = React.useState<JSX.Element[]>([])
-
+  const router = useRouter()
   const [usernameNotValid, setUsernameNotValid] = React.useState(true)
   const [passwordNotValid, setPasswordNotValid] = React.useState(true)
   const [inSignup, setInSignup] = React.useState(false)
+  const [isAuthenticating, setIsAuthenticating] = React.useState(false)
 
   const handleSignInAlert = (message: string | undefined) => {
     setErrorAlertElements((prevState) => {
@@ -55,6 +59,28 @@ export default function Home() {
 
   const handleInSignup = (inSignup: boolean) => {
     setInSignup(inSignup)
+  }
+
+  React.useEffect(() => {
+    const validate = async () => {
+      try {
+        const validateRes = await axios.get("http://localhost:5000/api/validate", {
+          withCredentials: true
+        })
+        setIsAuthenticating(false)
+        router.push("/admin")
+      } catch (error) {
+      }
+    }
+
+    validate()
+
+  }, [router])
+
+  if (isAuthenticating) {
+    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", width: "100vw", height: "100vh" }}>
+      <CircularProgress sx={{ color: "#202430" }} />
+    </div>
   }
 
   return (

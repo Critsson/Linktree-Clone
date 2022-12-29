@@ -2,10 +2,8 @@ import React from 'react'
 import useWindowSize from '../useWindowSize'
 import styles from "../styles/Extras.module.css"
 import { motion } from "framer-motion"
-import { signIn } from "next-auth/react"
 import { useRouter } from "next/router"
 import { CircularProgress } from '@mui/material'
-import { useSession } from 'next-auth/react'
 import axios from 'axios'
 
 interface props {
@@ -19,7 +17,6 @@ interface props {
 
 const LoginPanel = (props: props) => {
 
-    const { status } = useSession()
     const [inLoginMode, setInLoginMode] = React.useState(true)
     const router = useRouter()
     const [isChecking, setIsChecking] = React.useState(false)
@@ -48,10 +45,6 @@ const LoginPanel = (props: props) => {
         flexDirection: "column" as "column"
     }
 
-    if (status === "authenticated") {
-        router.push("/admin")
-    }
-
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
@@ -74,21 +67,20 @@ const LoginPanel = (props: props) => {
             return
         }
 
-        const res = await signIn("credentials", {
-            loginUsername: username,
-            loginPassword: password,
-            redirect: false
-        })
-
-        console.log(res)
-        setIsChecking(false)
-
-        if (res?.error === null) {
-            await router.push("/admin")
+        try {
+            const postRes = await axios.post("http://localhost:5000/api/login", {
+                username,
+                password
+            }, {
+                withCredentials: true
+            })
+            setIsChecking(false)
+            router.push("/admin")
+        } catch (error) {
+            setIsChecking(false)
+            setIsIncorrect(true)
+            props.handleSignInAlert("Request failed with status code 401")
         }
-
-        setIsIncorrect(true)
-        props.handleSignInAlert(res?.error)
 
     }
 
@@ -118,8 +110,9 @@ const LoginPanel = (props: props) => {
             const postRes = await axios.post("http://localhost:5000/api/users", {
                 username,
                 password
+            }, {
+                withCredentials: true
             })
-            console.log(postRes)
         } catch (error) {
             setIsChecking(false)
             setIsIncorrect(true)
@@ -127,17 +120,8 @@ const LoginPanel = (props: props) => {
             return
         }
 
-        const res = await signIn("credentials", {
-            loginUsername: username,
-            loginPassword: password,
-            redirect: false
-        })
-
-        if (res?.error === null) {
-            await router.push("/admin")
-        }
-
         setIsChecking(false)
+        router.push("/admin")
 
     }
 

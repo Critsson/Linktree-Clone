@@ -1,29 +1,46 @@
 import React from 'react'
-import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import { CircularProgress } from "@mui/material"
+import axios from 'axios'
 
 const AdminPage = () => {
 
   const router = useRouter()
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      router.push("/")
-    }
-  })
+  const [isLoading, setIsLoading] = React.useState(true)
 
-  if (status === "loading") {
-    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", width: "100vw" }}>
-      <CircularProgress sx={{ color: "lightgrey" }} />
+  React.useEffect(() => {
+
+    const validate = async () => {
+      try {
+        const validateRes = await axios.get("http://localhost:5000/api/validate", {
+          withCredentials: true
+        })
+        setIsLoading(false)
+      } catch (error) {
+        router.push("/")
+      }
+    }
+
+    validate()
+
+  }, [router])
+
+  const handleLogout = async () => {
+      const logoutRes = await axios.get("http://localhost:5000/api/logout", {
+        withCredentials: true
+      })
+      router.push("/")
+  }
+
+  if (isLoading) {
+    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", width: "100vw", height: "100vh" }}>
+      <CircularProgress sx={{ color: "#202430" }} />
     </div>
   }
 
-  console.log(session)
-
   return (
     <div>
-      <button onClick={() => signOut({ callbackUrl: "/" })}>Sign Out</button>
+      <button onClick={handleLogout}>Logout</button>
     </div>
   )
 }

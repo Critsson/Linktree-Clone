@@ -64,7 +64,7 @@ export default function Home() {
   React.useEffect(() => {
     const validate = async () => {
       try {
-        const validateRes = await axios.get("http://44.201.234.255:5000/api/validate", {
+        const validateRes = await axios.get("http://localhost:5000/api/validate", {
           withCredentials: true
         })
         setIsAuthenticating(false)

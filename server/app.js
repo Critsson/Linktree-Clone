@@ -7,11 +7,11 @@ const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
 const rateLimit = require("express-rate-limit")
 const https = require("https")
+const fs = require("fs")
 const options = {
     key: fs.readFileSync("/etc/letsencrypt/live/chainlink.restapi.ca/privkey.pem"),
     cert: fs.readFileSync("/etc/letsencrypt/live/chainlink.restapi.ca/cert.pem")
 }
-const fs = require("fs")
 const app = express();
 const saltRounds = 12;
 

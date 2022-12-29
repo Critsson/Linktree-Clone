@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "server": "nodemon app.js"
+    "server": "pm2 start app.js"
   },
   "dependencies": {
     "@vendia/serverless-express": "^4.10.1",

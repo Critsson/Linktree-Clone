@@ -23,13 +23,13 @@ const pool = new Pool({
     port: process.env.DB_PORT
 })
 
-const limiter = rateLimit({
-    windowMs: 1000,
-    max: 5,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: "Too many requests. Please try again later"
-})
+// const limiter = rateLimit({
+//     windowMs: 1000,
+//     max: 10,
+//     standardHeaders: true,
+//     legacyHeaders: false,
+//     message: "Too many requests. Please try again later"
+// })
 
 app.use((req, res, next) => {
     if (req.secure) {
@@ -41,7 +41,7 @@ app.use((req, res, next) => {
 app.use(cors({ credentials: true, origin: true, methods: "GET,HEAD,PUT,PATCH,POST,DELETE" }))
 app.use(express.json())
 app.use(cookieParser())
-app.use("/api", limiter)
+// app.use("/api", limiter)
 
 //Register a user to the database
 app.post("/api/users", async (req, res) => {

@@ -31,6 +31,8 @@ const limiter = rateLimit({
     message: "Too many requests. Please try again later"
 })
 
+
+
 app.use((req, res, next) => {
     if (req.secure) {
         next();
@@ -43,21 +45,39 @@ app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)
 
+const verifyJwt = (req, res, next) => {
+    const token = req.cookies.jwt
+
+    if (!token) {
+        return res.status(401).send({ message: "No token" })
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: "Not authorized" })
+        }
+        req.user = decoded
+    })
+
+    next()
+
+}
+
 //Register a user to the database
 app.post("/api/users", async (req, res) => {
     const start = Date.now()
     const { username, password } = req.body
-    await bcrypt.genSalt(saltRounds, async (err, salt) => {
+    bcrypt.genSalt(saltRounds, async (err, salt) => {
         if (err) {
             console.error(err)
             return res.status(500).send({ message: "Salt gen failed" })
         } else {
-            await bcrypt.hash(password, salt, async (err, hash) => {
+            bcrypt.hash(password, salt, async (err, hash) => {
                 if (err) {
                     console.error(err)
                     return res.status(500).send({ message: "Hashing failed" })
                 } else {
-                    await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username, hash], (error, result) => {
+                    pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username, hash], (error, result) => {
                         if (error && error.code === "23505") {
                             console.error(error)
                             return res.status(500).send({ message: "Username already exists" })
@@ -66,7 +86,7 @@ app.post("/api/users", async (req, res) => {
                             console.error(error)
                             return res.status(500).send({ message: "Error adding to the database" })
                         } else {
-                            const token = jwt.sign({ username: result.rows[0].username }, process.env.JWT_SECRET, {
+                            const token = jwt.sign({ id: result.rows[0].id, username: result.rows[0].username }, process.env.JWT_SECRET, {
                                 expiresIn: "12h"
                             })
                             console.log(`/POST:Registered User - ${Date.now() - start} ms`)
@@ -82,45 +102,36 @@ app.post("/api/users", async (req, res) => {
 })
 
 //Get all users
-app.get("/api/users", async (req, res) => {
+app.get("/api/users", verifyJwt, async (req, res) => {
 
-    const token = req.cookies.jwt
+    const { username, id } = req.user
     const start = Date.now()
 
-    if (!token) {
-        return res.status(401).send({ message: "No token" })
+    if (username !== "chainlinkadmin") {
+        return res.status(401).send({ message: "Not authorized" })
+    } else {
+        pool.query("SELECT * FROM users", (error, result) => {
+            if (error) {
+                console.error(error)
+                return res.status(500).send({ message: "Error getting all users from database" })
+            } else {
+                const placeholder = result.rows.map(({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
+                    return { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
+                })
+                console.log(`/GET - ${Date.now() - start} ms`)
+                return res.status(200).send(placeholder)
+            }
+        })
     }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: "Not authorized" })
-        } else if (decoded.username !== "chainlinkadmin") {
-            return res.status(401).send({ message: "Not authorized" })
-        } else {
-            pool.query("SELECT * FROM users", (error, result) => {
-                if (error) {
-                    console.error(error)
-                    return res.status(500).send({ message: "Error getting all users from database" })
-                } else {
-                    const placeholder = result.rows.map(({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
-                        return { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
-                    })
-                    console.log(`/GET - ${Date.now() - start} ms`)
-                    return res.status(200).send(placeholder)
-                }
-            })
-        }
-    })
-
-
 })
 
 //Get specific user
-app.get("/api/users/:username", async (req, res) => {
+app.get("/api/users/:uid", async (req, res) => {
 
-    const username = req.params.username
+    const uid = req.params.uid
     const start = Date.now()
 
-    await pool.query("SELECT * FROM users WHERE username = $1", [username], (error, result) => {
+    pool.query("SELECT * FROM users WHERE id = $1", [uid], (error, result) => {
         if (error) {
             console.error(error)
             return res.status(500).send({ message: "Error getting user from database" })
@@ -139,51 +150,32 @@ app.get("/api/users/:username", async (req, res) => {
 })
 
 //Delete specific user
-app.delete("/api/users/", async (req, res) => {
-    const token = req.cookies.jwt
+app.delete("/api/users/", verifyJwt, async (req, res) => {
+
     const start = Date.now()
+    const { id } = req.user
 
-    if (!token) {
-        return res.status(401).send({ message: "No token" })
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: "Not authorized" })
+    pool.query("DELETE FROM users WHERE id = $1 RETURNING *", [id], (error, result) => {
+        if (error) {
+            console.error(error)
+            return res.status(500).send({ message: "Error deleting user from database" })
+        } else if (result && result.rows.length === 0) {
+            return res.status(500).send({ message: "User does not exist" })
         } else {
-            pool.query("DELETE FROM users WHERE username = $1 RETURNING *", [decoded.username], (error, result) => {
-                if (error) {
-                    console.error(error)
-                    return res.status(500).send({ message: "Error deleting user from database" })
-                } else if (result && result.rows.length === 0) {
-                    return res.status(500).send({ message: "User does not exist" })
-                } else {
-                    console.log(`/DELETE - ${Date.now() - start} ms`)
-                    res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
-                    return res.status(200).send(result.rows)
-                }
-            })
+            console.log(`/DELETE - ${Date.now() - start} ms`)
+            res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
+            return res.status(200).send(result.rows)
         }
     })
-
 
 })
 
 //Update colors based on what is in the request body
-app.put("/api/users/:username", (req, res) => {
-    const token = req.cookies.jwt
+app.put("/api/users/", verifyJwt, (req, res) => {
 
-    if (!token) {
-        return res.status(401).send({ message: "No token" })
-    }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: "Not authorized" })
-        }
-    })
-    const username = req.params.username
-    const { bgcolor, fontcolor, buttoncolor, tagcolor, avatarbgcolor, avatarfontcolor } = req.body
     const start = Date.now()
+    const { id } = req.user
+    const { bgcolor, fontcolor, buttoncolor, tagcolor, avatarbgcolor, avatarfontcolor } = req.body
     const values = []
     let query = "UPDATE users SET "
     let count = 1;
@@ -245,8 +237,8 @@ app.put("/api/users/:username", (req, res) => {
         count++
     }
 
-    query += " WHERE username = $" + count + " RETURNING *"
-    values.push(username)
+    query += " WHERE id = $" + count + " RETURNING *"
+    values.push(id)
 
     pool.query(query, values, (error, result) => {
         if (error) {
@@ -257,26 +249,16 @@ app.put("/api/users/:username", (req, res) => {
             return res.status(200).send(result.rows)
         }
     })
-
 })
 
 //Update links
-app.put("/api/users/:username/links", (req, res) => {
-    const token = req.cookies.jwt
+app.put("/api/users/links", verifyJwt, (req, res) => {
 
-    if (!token) {
-        return res.status(401).send({ message: "No token" })
-    }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: "Not authorized" })
-        }
-    })
-    const username = req.params.username
+    const { id } = req.user
     const { links } = req.body
     const start = Date.now()
 
-    pool.query("UPDATE users SET links = $1 WHERE username = $2 RETURNING *", [JSON.stringify(links), username], (error, result) => {
+    pool.query("UPDATE users SET links = $1 WHERE id = $2 RETURNING *", [JSON.stringify(links), id], (error, result) => {
         if (error) {
             console.error(error)
             return res.status(500).send({ message: "Could not update links on database" })
@@ -300,7 +282,7 @@ app.post("/api/login", (req, res) => {
         } else if (result.rows.length > 0) {
             const isValid = await bcrypt.compare(password, result.rows[0].password)
             if (isValid) {
-                const token = jwt.sign({ username: result.rows[0].username }, process.env.JWT_SECRET, {
+                const token = jwt.sign({ id: result.rows[0].id, username: result.rows[0].username }, process.env.JWT_SECRET, {
                     expiresIn: "12h"
                 })
                 console.log(`LOGIN - ${Date.now() - start} ms`)

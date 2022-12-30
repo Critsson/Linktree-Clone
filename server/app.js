@@ -112,8 +112,8 @@ app.get("/api/users", verifyJwt, async (req, res) => {
             console.error(error)
             return res.status(500).send({ message: "Error getting all users from database" })
         } else {
-            const placeholder = result.rows.map(({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
-                return { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
+            const placeholder = result.rows.map(({ id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
+                return { id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
             })
             console.log(`/GET - ${Date.now() - start} ms`)
             return res.status(200).send(placeholder)

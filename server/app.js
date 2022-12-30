@@ -70,6 +70,13 @@ app.post("/api/users", async (req, res) => {
                                 expiresIn: "12h"
                             })
                             console.log(`/POST:Registered User - ${Date.now() - start} ms`)
+                            // is "chainlink.restapi.ca" a development url you're using? it's usually best to use a local only hostname for local development
+                            // you should probably use a local only domain so you can set the domain to be "chainlink.local" and browsers should send it to any domains that match "chainlink.local" regardless of port or subdomain as long as you specify the domain.
+                            // you need to update your local hosts file so that it knows to send requests to those hostnames to your local server. https://www.howtogeek.com/howto/27350/beginner-geek-how-to-edit-your-hosts-file/
+                            // you would simply list add
+                            // localhost:3000   chainlink.local
+
+                            // i think you can keep it to localhost as well since ports are ignored for cookies as long as the domains match. https://stackoverflow.com/questions/18492576/share-cookies-between-subdomain-and-domain
                             res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
                             return res.status(200).send({ token })
                         }
@@ -94,7 +101,7 @@ app.get("/api/users", async (req, res) => {
             return res.status(401).send({ message: "Not authorized" })
         }
     })
-
+    // should a user really be able to list all users? maybe this is just for testing
     const start = Date.now()
     await pool.query("SELECT * FROM users", (error, result) => {
         if (error) {
@@ -111,11 +118,15 @@ app.get("/api/users", async (req, res) => {
 })
 
 //Get specific user
+// generally you use the id for resource identifiers /api/users/:userId
+// also need to verify jwt and use the correct user only
 app.get("/api/users/:username", async (req, res) => {
 
     const username = req.params.username
     const start = Date.now()
 
+    // if you use a callback here there's no need to await since it does not return a Promise. if you want to use await then you use the result of the call to pool.query
+    // const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     await pool.query("SELECT * FROM users WHERE username = $1", [username], (error, result) => {
         if (error) {
             console.error(error)
@@ -143,6 +154,7 @@ app.delete("/api/users/", async (req, res) => {
         return res.status(401).send({ message: "No token" })
     }
 
+    // almost all of your routes will need this so you should separate out all the routes that require authentication and create a "verify jwt" middleware for all those routes
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             return res.status(401).send({ message: "Not authorized" })
@@ -181,6 +193,8 @@ app.put("/api/users/:username", (req, res) => {
     const { bgcolor, fontcolor, buttoncolor, tagcolor, avatarbgcolor, avatarfontcolor } = req.body
     const start = Date.now()
     const values = []
+    // you should take a look at an orm to make it easier to manage schema and write SQL queries
+    // sequalize, knex, typeorm and prisma are good examples
     let query = "UPDATE users SET "
     let count = 1;
 
@@ -263,11 +277,14 @@ app.put("/api/users/:username/links", (req, res) => {
     if (!token) {
         return res.status(401).send({ message: "No token" })
     }
+    // verify has a overload for this function that returns a promise so you can await this if you want. you want to generally stick to one style of either using awaits or no awaits
+    // const decoded = await jwt.verify(token, process.env.JWT_SECRET)
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             return res.status(401).send({ message: "Not authorized" })
         }
     })
+    // scope to the user in the jwt
     const username = req.params.username
     const { links } = req.body
     const start = Date.now()

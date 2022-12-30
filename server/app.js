@@ -104,7 +104,7 @@ app.post("/api/users", async (req, res) => {
 //Get all users
 app.get("/api/users", verifyJwt, async (req, res) => {
 
-    const { username, id } = req.user
+    const { id } = req.user
     const start = Date.now()
 
     pool.query("SELECT * FROM users", (error, result) => {
@@ -135,13 +135,13 @@ app.get("/api/users/:uid", async (req, res) => {
         } else if (result && result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
         } else if (result && result.rows[0].links) {
-            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            const { links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
             console.log(`/GET - ${Date.now() - start} ms`)
-            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+            return res.status(200).send({ links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         } else {
             console.log(`/GET - ${Date.now() - start} ms`)
-            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
-            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+            const { links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            return res.status(200).send({ links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         }
     })
 })
@@ -161,7 +161,7 @@ app.delete("/api/users/", verifyJwt, async (req, res) => {
         } else {
             console.log(`/DELETE - ${Date.now() - start} ms`)
             res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
-            return res.status(200).send(result.rows)
+            return res.status(200).send({message: "User deleted"})
         }
     })
 

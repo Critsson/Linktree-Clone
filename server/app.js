@@ -133,13 +133,13 @@ app.get("/api/users/:username", async (req, res) => {
         } else if (result && result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
         } else if (result && result.rows[0].links) {
-            const { links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
             console.log(`/GET - ${Date.now() - start} ms`)
-            return res.status(200).send({ links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         } else {
             console.log(`/GET - ${Date.now() - start} ms`)
-            const { links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
-            return res.status(200).send({ links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         }
     })
 })

@@ -123,12 +123,12 @@ app.get("/api/users", verifyJwt, async (req, res) => {
 })
 
 //Get specific user
-app.get("/api/users/:uid", async (req, res) => {
+app.get("/api/users/:username", async (req, res) => {
 
-    const uid = req.params.uid
+    const username = req.params.username
     const start = Date.now()
 
-    pool.query("SELECT * FROM users WHERE id = $1", [uid], (error, result) => {
+    pool.query("SELECT * FROM users WHERE id = $1", [username], (error, result) => {
         if (error) {
             console.error(error)
             return res.status(500).send({ message: "Error getting user from database" })

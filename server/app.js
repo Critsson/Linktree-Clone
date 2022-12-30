@@ -70,7 +70,7 @@ app.post("/api/users", async (req, res) => {
                                 expiresIn: "12h"
                             })
                             console.log(`/POST:Registered User - ${Date.now() - start} ms`)
-                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "restapi.ca", sameSite: "none" })
+                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
                             return res.status(200).send({ token })
                         }
                     })
@@ -154,6 +154,7 @@ app.delete("/api/users/", async (req, res) => {
                     return res.status(500).send({ message: "User does not exist" })
                 } else {
                     console.log(`/DELETE - ${Date.now() - start} ms`)
+                    res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
                     return res.status(200).send(result.rows)
                 }
             })
@@ -298,7 +299,7 @@ app.post("/api/login", (req, res) => {
                     expiresIn: "12h"
                 })
                 console.log(`LOGIN - ${Date.now() - start} ms`)
-                res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "restapi.ca", sameSite: "none" })
+                res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
                 return res.status(200).send({ token })
             } else {
                 return res.status(401).send({ message: "Not authorized" })
@@ -330,7 +331,7 @@ app.get("/api/validate", (req, res) => {
 
 //Logout User
 app.get("/api/logout", (req, res) => {
-    res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "restapi.ca", sameSite: "none" })
+    res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
     res.status(200).send({ message: "Logged out" })
 })
 

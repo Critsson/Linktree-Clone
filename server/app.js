@@ -318,7 +318,6 @@ app.post("/api/login", (req, res) => {
 //Validate User
 app.get("/api/validate", (req, res) => {
     const token = req.cookies.jwt
-    console.log(req.cookies.jwt)
     const start = Date.now()
 
     if (!token) {

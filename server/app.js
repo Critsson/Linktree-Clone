@@ -146,18 +146,17 @@ app.delete("/api/users/", async (req, res) => {
         if (err) {
             return res.status(401).send({ message: "Not authorized" })
         } else {
-            console.log(decoded)
-            // pool.query("DELETE FROM users WHERE username = $1 RETURNING *", [decoded], (error, result) => {
-            //     if (error) {
-            //         console.error(error)
-            //         return res.status(500).send({ message: "Error deleting user from database" })
-            //     } else if (result && result.rows.length === 0) {
-            //         return res.status(500).send({ message: "User does not exist" })
-            //     } else {
-            //         console.log(`/DELETE - ${Date.now() - start} ms`)
-            //         return res.status(200).send(result.rows)
-            //     }
-            // })
+            pool.query("DELETE FROM users WHERE username = $1 RETURNING *", [decoded.username], (error, result) => {
+                if (error) {
+                    console.error(error)
+                    return res.status(500).send({ message: "Error deleting user from database" })
+                } else if (result && result.rows.length === 0) {
+                    return res.status(500).send({ message: "User does not exist" })
+                } else {
+                    console.log(`/DELETE - ${Date.now() - start} ms`)
+                    return res.status(200).send(result.rows)
+                }
+            })
         }
     })
 

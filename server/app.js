@@ -128,7 +128,7 @@ app.get("/api/users/:username", async (req, res) => {
     const username = req.params.username
     const start = Date.now()
 
-    pool.query("SELECT * FROM users WHERE id = $1", [username], (error, result) => {
+    pool.query("SELECT * FROM users WHERE username = $1", [username], (error, result) => {
         if (error) {
             console.error(error)
             return res.status(500).send({ message: "Error getting user from database" })

@@ -135,8 +135,9 @@ app.get("/api/users/:username", async (req, res) => {
 })
 
 //Delete specific user
-app.delete("/api/users/:username", async (req, res) => {
+app.delete("/api/users/", async (req, res) => {
     const token = req.cookies.jwt
+    const start = Date.now()
 
     if (!token) {
         return res.status(401).send({ message: "No token" })
@@ -144,22 +145,23 @@ app.delete("/api/users/:username", async (req, res) => {
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             return res.status(401).send({ message: "Not authorized" })
-        }
-    })
-    const username = req.params.username
-    const start = Date.now()
-
-    await pool.query("DELETE FROM users WHERE username = $1 RETURNING *", [username], (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Error deleting user from database" })
-        } else if (result && result.rows.length === 0) {
-            return res.status(500).send({ message: "User does not exist" })
         } else {
-            console.log(`/DELETE - ${Date.now() - start} ms`)
-            return res.status(200).send(result.rows)
+            console.log(decoded)
+            // pool.query("DELETE FROM users WHERE username = $1 RETURNING *", [decoded], (error, result) => {
+            //     if (error) {
+            //         console.error(error)
+            //         return res.status(500).send({ message: "Error deleting user from database" })
+            //     } else if (result && result.rows.length === 0) {
+            //         return res.status(500).send({ message: "User does not exist" })
+            //     } else {
+            //         console.log(`/DELETE - ${Date.now() - start} ms`)
+            //         return res.status(200).send(result.rows)
+            //     }
+            // })
         }
     })
+
+
 })
 
 //Update colors based on what is in the request body

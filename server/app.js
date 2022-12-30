@@ -146,6 +146,30 @@ app.get("/api/users/:username", async (req, res) => {
     })
 })
 
+//Get specific user through token
+app.get("/api/admin", verifyJwt, async (req, res) => {
+
+    const {id} = req.user
+    const start = Date.now()
+
+    pool.query("SELECT * FROM users WHERE id = $1", [id], (error, result) => {
+        if (error) {
+            console.error(error)
+            return res.status(500).send({ message: "Error getting user from database" })
+        } else if (result && result.rows.length === 0) {
+            return res.status(500).send({ message: "User does not exist" })
+        } else if (result && result.rows[0].links) {
+            const { links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            console.log(`/GET - ${Date.now() - start} ms`)
+            return res.status(200).send({ links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+        } else {
+            console.log(`/GET - ${Date.now() - start} ms`)
+            const { links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            return res.status(200).send({ links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+        }
+    })
+})
+
 //Delete specific user
 app.delete("/api/users/", verifyJwt, async (req, res) => {
 

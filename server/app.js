@@ -107,22 +107,19 @@ app.get("/api/users", verifyJwt, async (req, res) => {
     const { username, id } = req.user
     const start = Date.now()
 
-    if (username !== "chainlinkadmin") {
-        return res.status(401).send({ message: "Not authorized" })
-    } else {
-        pool.query("SELECT * FROM users", (error, result) => {
-            if (error) {
-                console.error(error)
-                return res.status(500).send({ message: "Error getting all users from database" })
-            } else {
-                const placeholder = result.rows.map(({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
-                    return { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
-                })
-                console.log(`/GET - ${Date.now() - start} ms`)
-                return res.status(200).send(placeholder)
-            }
-        })
-    }
+    pool.query("SELECT * FROM users", (error, result) => {
+        if (error) {
+            console.error(error)
+            return res.status(500).send({ message: "Error getting all users from database" })
+        } else {
+            const placeholder = result.rows.map(({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
+                return { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
+            })
+            console.log(`/GET - ${Date.now() - start} ms`)
+            return res.status(200).send(placeholder)
+        }
+    })
+
 })
 
 //Get specific user

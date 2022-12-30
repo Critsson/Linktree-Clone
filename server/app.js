@@ -31,6 +31,12 @@ const limiter = rateLimit({
     message: "Too many requests. Please try again later"
 })
 
+const corsOptions = {
+    credentials: true,
+    origin: true,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE"
+}
+
 
 
 app.use((req, res, next) => {
@@ -40,7 +46,7 @@ app.use((req, res, next) => {
         res.redirect(`https://${req.headers.host}${req.url}`)
     }
 })
-app.use(cors({ credentials: true, origin: true, methods: "GET,HEAD,PUT,PATCH,POST,DELETE" }))
+
 app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)
@@ -64,7 +70,7 @@ const verifyJwt = (req, res, next) => {
 }
 
 //Register a user to the database
-app.post("/api/users", async (req, res) => {
+app.post("/api/users", cors(corsOptions), async (req, res) => {
     const start = Date.now()
     const { username, password } = req.body
     bcrypt.genSalt(saltRounds, async (err, salt) => {
@@ -102,7 +108,7 @@ app.post("/api/users", async (req, res) => {
 })
 
 //Get all users
-app.get("/api/users", verifyJwt, async (req, res) => {
+app.get("/api/users", cors(corsOptions), verifyJwt, async (req, res) => {
 
     const { id } = req.user
     const start = Date.now()
@@ -123,7 +129,7 @@ app.get("/api/users", verifyJwt, async (req, res) => {
 })
 
 //Get specific user
-app.get("/api/users/:username", async (req, res) => {
+app.get("/api/users/:username", cors({origin: true}), async (req, res) => {
 
     const username = req.params.username
     const start = Date.now()
@@ -147,9 +153,9 @@ app.get("/api/users/:username", async (req, res) => {
 })
 
 //Get specific user through token
-app.get("/api/admin", verifyJwt, async (req, res) => {
+app.get("/api/admin", cors(corsOptions), verifyJwt, async (req, res) => {
 
-    const {id} = req.user
+    const { id } = req.user
     const start = Date.now()
 
     pool.query("SELECT * FROM users WHERE id = $1", [id], (error, result) => {
@@ -171,7 +177,7 @@ app.get("/api/admin", verifyJwt, async (req, res) => {
 })
 
 //Delete specific user
-app.delete("/api/users/", verifyJwt, async (req, res) => {
+app.delete("/api/users/", cors(corsOptions), verifyJwt, async (req, res) => {
 
     const start = Date.now()
     const { id } = req.user
@@ -185,14 +191,14 @@ app.delete("/api/users/", verifyJwt, async (req, res) => {
         } else {
             console.log(`/DELETE - ${Date.now() - start} ms`)
             res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
-            return res.status(200).send({message: "User deleted"})
+            return res.status(200).send({ message: "User deleted" })
         }
     })
 
 })
 
 //Update colors based on what is in the request body
-app.put("/api/users/", verifyJwt, (req, res) => {
+app.put("/api/users/", cors(corsOptions), verifyJwt, (req, res) => {
 
     const start = Date.now()
     const { id } = req.user
@@ -273,7 +279,7 @@ app.put("/api/users/", verifyJwt, (req, res) => {
 })
 
 //Update links
-app.put("/api/users/links", verifyJwt, (req, res) => {
+app.put("/api/users/links", cors(corsOptions), verifyJwt, (req, res) => {
 
     const { id } = req.user
     const { links } = req.body
@@ -291,7 +297,7 @@ app.put("/api/users/links", verifyJwt, (req, res) => {
 })
 
 //Login User
-app.post("/api/login", (req, res) => {
+app.post("/api/login", cors(corsOptions), (req, res) => {
 
     const { username, password } = req.body
     const start = Date.now()
@@ -319,7 +325,7 @@ app.post("/api/login", (req, res) => {
 })
 
 //Validate User
-app.get("/api/validate", (req, res) => {
+app.get("/api/validate", cors(corsOptions), (req, res) => {
     const token = req.cookies.jwt
     const start = Date.now()
 
@@ -337,7 +343,7 @@ app.get("/api/validate", (req, res) => {
 })
 
 //Logout User
-app.get("/api/logout", (req, res) => {
+app.get("/api/logout", cors(corsOptions), (req, res) => {
     res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
     res.status(200).send({ message: "Logged out" })
 })

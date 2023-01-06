@@ -43,7 +43,7 @@ app.use(express.json())
 app.use(cookieParser())
 app.use("/api", limiter)
 
-const verifyJwt = (req, res, next) => {
+const verifyJwt = async (req, res, next) => {
     const token = req.cookies.jwt
 
     if (!token) {
@@ -99,18 +99,17 @@ app.get("/api/users", verifyJwt, async (req, res) => {
     const { id } = req.user
     const start = Date.now()
 
-    pool.query("SELECT * FROM users", (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Error getting all users from database" })
-        } else {
-            const placeholder = result.rows.map(({ id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
-                return { id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
-            })
-            console.log(`/GET - ${Date.now() - start} ms`)
-            return res.status(200).send(placeholder)
-        }
-    })
+    try {
+        const result = await pool.query("SELECT * FROM users")
+        const placeholder = result.rows.map(({ id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
+            return { id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
+        })
+        console.log(`/GET - ${Date.now() - start} ms`)
+        return res.status(200).send(placeholder)
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Error getting all users from database" })
+    }
 
 })
 
@@ -120,22 +119,19 @@ app.get("/api/users/:username", async (req, res) => {
     const username = req.params.username
     const start = Date.now()
 
-    pool.query("SELECT * FROM users WHERE username = $1", [username], (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Error getting user from database" })
-        } else if (result && result.rows.length === 0) {
+    try {
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username])
+        if (result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
-        } else if (result && result.rows[0].links) {
-            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
-            console.log(`/GET - ${Date.now() - start} ms`)
-            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         } else {
-            console.log(`/GET - ${Date.now() - start} ms`)
             const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            console.log(`/GET - ${Date.now() - start} ms`)
             return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         }
-    })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Error getting user from database" })
+    }
 })
 
 //Get specific user through token
@@ -144,22 +140,19 @@ app.get("/api/admin", verifyJwt, async (req, res) => {
     const { id } = req.user
     const start = Date.now()
 
-    pool.query("SELECT * FROM users WHERE id = $1", [id], (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Error getting user from database" })
-        } else if (result && result.rows.length === 0) {
+    try {
+        const result = await pool.query("SELECT * FROM users WHERE id = $1", [id])
+        if (result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
-        } else if (result && result.rows[0].links) {
-            const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
-            console.log(`/GET - ${Date.now() - start} ms`)
-            return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         } else {
-            console.log(`/GET - ${Date.now() - start} ms`)
             const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+            console.log(`/GET - ${Date.now() - start} ms`)
             return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
         }
-    })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Error getting user from database" })
+    }
 })
 
 //Delete specific user
@@ -168,23 +161,24 @@ app.delete("/api/users/", verifyJwt, async (req, res) => {
     const start = Date.now()
     const { id } = req.user
 
-    pool.query("DELETE FROM users WHERE id = $1 RETURNING *", [id], (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Error deleting user from database" })
-        } else if (result && result.rows.length === 0) {
+    try {
+        const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING *", [id])
+        if (result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
         } else {
             console.log(`/DELETE - ${Date.now() - start} ms`)
             res.cookie("jwt", "", { maxAge: 0, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
             return res.status(200).send({ message: "User deleted" })
         }
-    })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Error deleting user from database" })
+    }
 
 })
 
 //Update colors based on what is in the request body
-app.put("/api/users/", verifyJwt, (req, res) => {
+app.put("/api/users/", verifyJwt, async (req, res) => {
 
     const start = Date.now()
     const { id } = req.user
@@ -253,46 +247,44 @@ app.put("/api/users/", verifyJwt, (req, res) => {
     query += " WHERE id = $" + count + " RETURNING *"
     values.push(id)
 
-    pool.query(query, values, (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Could not update information on database" })
-        } else {
-            console.log(`/PUT - ${Date.now() - start} ms`)
-            return res.status(200).send(result.rows)
-        }
-    })
+    try {
+        const result = await pool.query(query, values)
+        const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+        console.log(`/PUT - ${Date.now() - start} ms`)
+        return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Could not update information on database" })
+    }
 })
 
 //Update links
-app.put("/api/users/links", verifyJwt, (req, res) => {
+app.put("/api/users/links", verifyJwt, async (req, res) => {
 
     const { id } = req.user
     const { links } = req.body
     const start = Date.now()
 
-    pool.query("UPDATE users SET links = $1 WHERE id = $2 RETURNING *", [JSON.stringify(links), id], (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(500).send({ message: "Could not update links on database" })
-        } else {
-            console.log(`/PUT - ${Date.now() - start} ms`)
-            return res.status(200).send(result.rows)
-        }
-    })
+    try {
+        const result = await pool.query("UPDATE users SET links = $1 WHERE id = $2 RETURNING *", [JSON.stringify(links), id])
+        const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+        console.log(`/PUT - ${Date.now() - start} ms`)
+        return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Could not update links on database" })
+    }
 })
 
 //Login User
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
 
     const { username, password } = req.body
     const start = Date.now()
 
-    pool.query("SELECT * from users WHERE username = $1", [username], async (error, result) => {
-        if (error) {
-            console.error(error)
-            return res.status(401).send({ message: "Not authorized" })
-        } else if (result.rows.length > 0) {
+    try {
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username])
+        if (result.rows.length > 0) {
             const isValid = await bcrypt.compare(password, result.rows[0].password)
             if (isValid) {
                 const token = jwt.sign({ id: result.rows[0].id, username: result.rows[0].username }, process.env.JWT_SECRET, {
@@ -307,7 +299,10 @@ app.post("/api/login", (req, res) => {
         } else {
             return res.status(401).send({ message: "Not authorized" })
         }
-    })
+    } catch (err) {
+        console.error(err)
+        return res.status(401).send({ message: "Not authorized" })
+    }
 })
 
 //Validate User

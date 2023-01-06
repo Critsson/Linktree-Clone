@@ -65,38 +65,32 @@ const verifyJwt = (req, res, next) => {
 app.post("/api/users", async (req, res) => {
     const start = Date.now()
     const { username, password } = req.body
-    bcrypt.genSalt(saltRounds, async (err, salt) => {
-        if (err) {
-            console.error(err)
-            return res.status(500).send({ message: "Salt gen failed" })
-        } else {
-            bcrypt.hash(password, salt, async (err, hash) => {
-                if (err) {
-                    console.error(err)
-                    return res.status(500).send({ message: "Hashing failed" })
-                } else {
-                    pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username, hash], (error, result) => {
-                        if (error && error.code === "23505") {
-                            console.error(error)
-                            return res.status(500).send({ message: "Username already exists" })
-                        }
-                        else if (error) {
-                            console.error(error)
-                            return res.status(500).send({ message: "Error adding to the database" })
-                        } else {
-                            const token = jwt.sign({ id: result.rows[0].id, username: result.rows[0].username }, process.env.JWT_SECRET, {
-                                expiresIn: "12h"
-                            })
-                            console.log(`/POST:Registered User - ${Date.now() - start} ms`)
-                            res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
-                            return res.status(200).send({ token })
-                        }
-                    })
-                }
-            })
-        }
+
+    try {
+        const generatedSalt = await bcrypt.genSalt(saltRounds)
+        var hashedPass = await bcrypt.hash(password, generatedSalt)
+    } catch (err) {
+        console.error(err)
+        return res.status(500).send({ message: "Hashing failed" })
     }
-    )
+
+    try {
+        const result = await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username, hashedPass])
+        const token = jwt.sign({ id: result.rows[0].id, username: result.rows[0].username }, process.env.JWT_SECRET, {
+            expiresIn: "12h"
+        })
+        console.log(`/POST:Registered User - ${Date.now() - start} ms`)
+        res.cookie("jwt", token, { maxAge: 43200000, httpOnly: true, secure: true, domain: "chainlink.restapi.ca", sameSite: "none" })
+        return res.status(200).send({ token })
+
+    } catch (err) {
+        console.error(err)
+        if (err.code === "23505") {
+            return res.status(500).send({ message: "Username already exists" })
+        }
+        return res.status(500).send({ message: "Error adding to the database" })
+    }
+
 })
 
 //Get all users

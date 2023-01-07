@@ -75,7 +75,7 @@ app.post("/api/users", async (req, res) => {
     }
 
     try {
-        const result = await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username, hashedPass])
+        const result = await pool.query("INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *", [username.toLowerCase(), hashedPass])
         const token = jwt.sign({ id: result.rows[0].id, username: result.rows[0].username }, process.env.JWT_SECRET, {
             expiresIn: "12h"
         })
@@ -120,7 +120,7 @@ app.get("/api/users/:username", async (req, res) => {
     const start = Date.now()
 
     try {
-        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username])
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username.toLowerCase()])
         if (result.rows.length === 0) {
             return res.status(500).send({ message: "User does not exist" })
         } else {
@@ -284,7 +284,7 @@ app.post("/api/login", async (req, res) => {
     const start = Date.now()
 
     try {
-        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username])
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username.toLowerCase()])
         if (result.rows.length > 0) {
             const isValid = await bcrypt.compare(password, result.rows[0].password)
             if (isValid) {

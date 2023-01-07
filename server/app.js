@@ -267,9 +267,10 @@ app.put("/api/users/links", verifyJwt, async (req, res) => {
 
     try {
         const result = await pool.query("UPDATE users SET links = $1 WHERE id = $2 RETURNING *", [JSON.stringify(links), id])
-        const { username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+        const { username, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor } = result.rows[0]
+        const newLinks = result.rows[0].links
         console.log(`/PUT - ${Date.now() - start} ms`)
-        return res.status(200).send({ username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
+        return res.status(200).send({ username, links: newLinks, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor })
     } catch (err) {
         console.error(err)
         return res.status(500).send({ message: "Could not update links on database" })

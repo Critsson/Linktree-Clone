@@ -263,6 +263,7 @@ app.put("/api/users/links", verifyJwt, async (req, res) => {
 
     const { id } = req.user
     const { links } = req.body
+    console.log(links)
     const start = Date.now()
 
     try {

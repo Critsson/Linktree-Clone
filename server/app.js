@@ -98,18 +98,22 @@ app.get("/api/users", verifyJwt, async (req, res) => {
 
     const { id } = req.user
     const start = Date.now()
-
-    try {
-        const result = await pool.query("SELECT * FROM users")
-        const placeholder = result.rows.map(({ id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
-            return { id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
-        })
-        console.log(`/GET - ${Date.now() - start} ms`)
-        return res.status(200).send(placeholder)
-    } catch (err) {
-        console.error(err)
-        return res.status(500).send({ message: "Error getting all users from database" })
+    if (id === 33) {
+        try {
+            const result = await pool.query("SELECT * FROM users")
+            const placeholder = result.rows.map(({ id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }) => {
+                return { id, username, links, bgcolor, fontcolor, buttoncolor, tagcolor, avatarfontcolor, avatarbgcolor }
+            })
+            console.log(`/GET - ${Date.now() - start} ms`)
+            return res.status(200).send(placeholder)
+        } catch (err) {
+            console.error(err)
+            return res.status(500).send({ message: "Error getting all users from database" })
+        }
+    } else {
+        return res.status(401).send({message: "Not authorized"})
     }
+
 
 })
 

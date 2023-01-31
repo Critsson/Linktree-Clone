@@ -113,8 +113,6 @@ app.get("/api/users", verifyJwt, async (req, res) => {
     } else {
         return res.status(401).send({message: "Not authorized"})
     }
-
-
 })
 
 //Get specific user
